@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>週間バーチカル空き時間調整</title>
+    <title id="page-title-tag">週間バーチカル空き時間調整</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -23,8 +23,8 @@
                     <i data-lucide="calendar" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-slate-900 leading-tight">SyncVertical</h1>
-                    <p class="text-xs text-slate-500">みんなの空き時間カンタン合わせ</p>
+                    <input type="text" id="event-title-input" value="チーム定例会議の調整" onchange="updateEventTitle(this.value)" class="text-lg font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-1 transition w-48 sm:w-64" title="クリックして会議名を変更">
+                    <p class="text-xs text-slate-500 px-1">みんなの空き時間カンタン合わせ</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 sm:space-x-3">
@@ -123,7 +123,7 @@
             </div>
             <div class="py-4 space-y-3 overflow-y-auto flex-1" id="participants-list-container"></div>
             <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
-                <button onclick="addDemoParticipant()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                <button onclick="addParticipant()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                     <span>参加者を追加</span>
                 </button>
@@ -162,6 +162,7 @@
         const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
         const DATES = ['6/1', '6/2', '6/3', '6/4', '6/5', '6/6', '6/7'];
 
+        let eventTitle = 'チーム定例会議の調整';
         let myId = 'user_' + Math.random().toString(36).substr(2, 9);
         let myName = 'あなた';
         let myColor = '#4f46e5';
@@ -170,8 +171,15 @@
         let isSelecting = true;
 
         window.addEventListener('DOMContentLoaded', () => {
+            // URLから会議名が渡っていれば復元
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('title')) {
+                eventTitle = decodeURIComponent(params.get('title'));
+                document.getElementById('event-title-input').value = eventTitle;
+                document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
+            }
+
             participants[myId] = { name: myName, color: myColor, slots: new Set() };
-            addPresetParticipants();
             renderCalendarGrid();
             updateAllUI();
 
@@ -184,15 +192,9 @@
             lucide.createIcons();
         });
 
-        function addPresetParticipants() {
-            const presets = [
-                { id: 'p1', name: '佐藤さん', color: '#0ea5e9', slots: ['0-10-0', '0-10-1', '0-11-0', '0-11-1'] },
-                { id: 'p2', name: '田中さん', color: '#10b981', slots: ['0-10-0', '0-10-1', '1-14-0', '1-14-1', '1-15-0'] },
-                { id: 'p3', name: '鈴木さん', color: '#f59e0b', slots: ['0-10-0', '1-14-0', '2-16-0', '2-16-1'] }
-            ];
-            presets.forEach(p => {
-                participants[p.id] = { name: p.name, color: p.color, slots: new Set(p.slots) };
-            });
+        function updateEventTitle(newTitle) {
+            eventTitle = newTitle.trim() || '会議・日程調整';
+            document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
         }
 
         function renderCalendarGrid() {
@@ -327,18 +329,13 @@
             updateRanking();
         }
 
-        function addDemoParticipant() {
-            const demoNames = ['高橋さん', '渡辺さん', '伊藤さん', '山本さん', '中村さん'];
-            const randomName = demoNames[Math.floor(Math.random() * demoNames.length)] + Math.floor(Math.random() * 10);
+        function addParticipant() {
             const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-            const demoId = 'demo_' + Math.random().toString(36).substr(2, 6);
-            const demoSlots = new Set();
-            for (let i = 0; i < 6; i++) {
-                demoSlots.add(`${Math.floor(Math.random() * 7)}-${Math.floor(Math.random() * 6) + 10}-${Math.random() > 0.5 ? 0 : 1}`);
-            }
-            participants[demoId] = { name: randomName, color: randomColor, slots: demoSlots };
+            const newId = 'user_' + Math.random().toString(36).substr(2, 6);
+            const newName = '参加者' + (Object.keys(participants).length + 1);
+            participants[newId] = { name: newName, color: randomColor, slots: new Set() };
             updateParticipantUI();
-            showToast(`${randomName}さんを追加しました`);
+            showToast('新しい参加者を追加しました');
         }
 
         function removeParticipant(pid) {
@@ -400,8 +397,11 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         function shareEvent() {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast('共有用URLをコピーしました！');
+            // 会議名を含めたURLを生成してクリップボードにコピー
+            const baseUrl = window.location.href.split('?')[0];
+            const shareUrl = `${baseUrl}?title=${encodeURIComponent(eventTitle)}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast('会議名付きの共有URLをコピーしました！');
             });
         }
 
