@@ -171,7 +171,7 @@
         let isSelecting = true;
 
         window.addEventListener('DOMContentLoaded', () => {
-            // URLから会議名が渡っていれば復元
+            // URLから会議名と参加者データを復元
             const params = new URLSearchParams(window.location.search);
             if (params.has('title')) {
                 eventTitle = decodeURIComponent(params.get('title'));
@@ -179,7 +179,29 @@
                 document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
             }
 
-            participants[myId] = { name: myName, color: myColor, slots: new Set() };
+            if (params.has('data')) {
+                try {
+                    const decodedData = JSON.parse(decodeURIComponent(escape(atob(params.get('data')))));
+                    participants = {};
+                    for (let pid in decodedData) {
+                        participants[pid] = {
+                            name: decodedData[pid].name,
+                            color: decodedData[pid].color,
+                            slots: new Set(decodedData[pid].slots)
+                        };
+                    }
+                    // 自分がまだ参加者リストにいなければ自分を追加、いれば引き継ぎ
+                    if (!participants[myId]) {
+                        participants[myId] = { name: myName, color: myColor, slots: new Set() };
+                    }
+                } catch (e) {
+                    console.error('データ復元エラー', e);
+                    participants[myId] = { name: myName, color: myColor, slots: new Set() };
+                }
+            } else {
+                participants[myId] = { name: myName, color: myColor, slots: new Set() };
+            }
+
             renderCalendarGrid();
             updateAllUI();
 
@@ -397,11 +419,23 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         function shareEvent() {
-            // 会議名を含めたURLを生成してクリップボードにコピー
+            // 参加者のslots(Set)を配列に変換してJSON化し、Base64で圧縮してURLに埋め込む
+            const exportData = {};
+            for (let pid in participants) {
+                exportData[pid] = {
+                    name: participants[pid].name,
+                    color: participants[pid].color,
+                    slots: Array.from(participants[pid].slots)
+                };
+            }
+            const jsonStr = JSON.stringify(exportData);
+            const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+
             const baseUrl = window.location.href.split('?')[0];
-            const shareUrl = `${baseUrl}?title=${encodeURIComponent(eventTitle)}`;
+            const shareUrl = `${baseUrl}?title=${encodeURIComponent(eventTitle)}&data=${base64Data}`;
+
             navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast('会議名付きの共有URLをコピーしました！');
+                showToast('空き時間データ入りの共有URLをコピーしました！');
             });
         }
 
