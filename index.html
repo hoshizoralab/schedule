@@ -64,14 +64,14 @@
                 </div>
                 <button onclick="saveToCloud()" id="save-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center space-x-1">
                     <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                    <span>変更を保存する</span>
+                    <span>クラウドに保存する</span>
                 </button>
             </div>
 
             <div class="flex items-center justify-between md:justify-end gap-3 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                 <div class="flex items-center space-x-1.5">
                     <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
-                    <span>選んだら「保存する」を押すと全員に同期されます</span>
+                    <span>予定を選んだら「保存する」を押して全員と同期します</span>
                 </div>
                 <button onclick="clearMySelection()" class="text-rose-600 hover:text-rose-700 font-medium underline shrink-0 ml-2">クリア</button>
             </div>
@@ -187,10 +187,9 @@
             lucide.createIcons();
         });
 
-        // 確実に動く無料ストレージ(jsonbin等または代わりのパブリックAPI)に合わせたロジック
         async function loadFromCloud() {
             try {
-                const res = await fetch(`https://json.geoipears.com/${roomId}`); // または安定したストレージ
+                const res = await fetch(`https://api.npoint.io/${roomId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.title) {
@@ -210,7 +209,7 @@
                     }
                 }
             } catch (e) {
-                console.log('新規ルームまたは読み込み');
+                console.log('新規ルーム');
             }
         }
 
@@ -233,23 +232,25 @@
             };
 
             try {
-                // 確実に保存できるバックアップ用の無料エンドポイント経由に切り替え
-                let res = await fetch(`https://api.jsonbin.io/v3/b`, { // 仮 または安全なストレージへ送信
+                // npoint.ioにPUTで保存（存在しない場合はPOSTで新規作成）
+                let res = await fetch(`https://api.npoint.io/${roomId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$...' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                // もし外部APIが制限される場合のフォールバックとして、localStorageとURL同期を組み合わせたハイブリッド保存に即時切り替え！
-                localStorage.setItem('sh_room_' + roomId, JSON.stringify(payload));
-                
-                showToast('変更を保存しました！');
+                if (!res.ok) {
+                    await fetch(`https://api.npoint.io/${roomId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                showToast('クラウドに保存し、全員と同期しました！');
             } catch (e) {
-                // 完全ローカル＆ブラウザ間同期の安全ルート
-                localStorage.setItem('sh_room_' + roomId, JSON.stringify(payload));
-                showToast('ローカルに保存しました');
+                console.error(e);
+                showToast('保存に失敗しました');
             } finally {
-                saveBtn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i><span>変更を保存する</span>';
+                saveBtn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i><span>クラウドに保存する</span>';
                 lucide.createIcons();
             }
         }
@@ -457,6 +458,7 @@
             });
         }
 
+        function openModal(id) { document.getElementById(id).classList.add('hidden'); } // fixed close syntax below
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
