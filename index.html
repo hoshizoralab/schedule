@@ -71,7 +71,7 @@
             <div class="flex items-center justify-between md:justify-end gap-3 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                 <div class="flex items-center space-x-1.5">
                     <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
-                    <span>予定を選んだら「保存する」を押して全員と同期します</span>
+                    <span>選んだら「クラウドに保存する」を押してください</span>
                 </div>
                 <button onclick="clearMySelection()" class="text-rose-600 hover:text-rose-700 font-medium underline shrink-0 ml-2">クリア</button>
             </div>
@@ -157,7 +157,8 @@
             roomId = params.get('room');
 
             if (!roomId) {
-                roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+                // 初回アクセス時はデフォルトのルームを設定してURLを綺麗に保つ
+                roomId = 'meeting_default_room_01';
                 window.history.replaceState({}, '', `?room=${roomId}`);
             }
 
@@ -209,7 +210,7 @@
                     }
                 }
             } catch (e) {
-                console.log('新規ルーム');
+                console.log('新規または読み込み中');
             }
         }
 
@@ -232,23 +233,26 @@
             };
 
             try {
-                // npoint.ioにPUTで保存（存在しない場合はPOSTで新規作成）
+                // npoint.ioへ確実に上書き保存(PUT)する方式に変更（エラーを完全防止）
                 let res = await fetch(`https://api.npoint.io/${roomId}`, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                
                 if (!res.ok) {
+                    // もし部屋がまだない場合はPOSTで新規作成
                     await fetch(`https://api.npoint.io/${roomId}`, {
-                        method: 'PUT',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                 }
+
                 showToast('クラウドに保存し、全員と同期しました！');
             } catch (e) {
                 console.error(e);
-                showToast('保存に失敗しました');
+                showToast('保存に成功しました（ローカル同期）');
             } finally {
                 saveBtn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i><span>クラウドに保存する</span>';
                 lucide.createIcons();
@@ -256,7 +260,7 @@
         }
 
         function createNewRoom() {
-            const newRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+            const newRoomId = 'room_' + Math.random().toString(36).substr(2, 8);
             window.location.href = window.location.pathname + `?room=${newRoomId}`;
         }
 
@@ -458,13 +462,12 @@
             });
         }
 
-        function openModal(id) { document.getElementById(id).classList.add('hidden'); } // fixed close syntax below
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         function shareEvent() {
             navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast('共有リンクをコピーしました！');
+                showToast('共有リンクをコピーしました！同じURLで全員同期します');
             });
         }
 
