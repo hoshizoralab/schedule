@@ -24,7 +24,7 @@
                 </div>
                 <div>
                     <input type="text" id="event-title-input" value="チーム定例会議の調整" onchange="updateEventTitle(this.value)" class="text-lg font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-1 transition w-48 sm:w-64" title="クリックして会議名を変更">
-                    <p class="text-xs text-slate-500 px-1">みんなの空き時間カンタン合わせ</p>
+                    <p class="text-xs text-slate-500 px-1">同じリンクを開くだけで全員の予定が同期します</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 sm:space-x-3">
@@ -36,9 +36,13 @@
                     <i data-lucide="trophy" class="w-4 h-4 text-indigo-500"></i>
                     <span>候補日時</span>
                 </button>
+                <button onclick="createNewRoom()" class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium shadow-sm transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">新しい日程調整を作る</span>
+                </button>
                 <button onclick="shareEvent()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium shadow-sm transition">
                     <i data-lucide="share-2" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">共有URLをコピー</span>
+                    <span class="hidden sm:inline">共有</span>
                 </button>
             </div>
         </div>
@@ -52,18 +56,22 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center space-x-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">あなたの名前:</label>
-                    <input type="text" id="my-name-input" value="あなた" onchange="updateMyName(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-32 sm:w-40">
+                    <input type="text" id="my-name-input" value="あなた" oninput="updateMyName(this.value)" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-32 sm:w-40">
                 </div>
                 <div class="flex items-center space-x-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">カラー:</label>
                     <input type="color" id="my-color-input" value="#4f46e5" onchange="updateMyColor(this.value)" class="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white">
                 </div>
+                <button onclick="saveToCloud()" id="save-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center space-x-1">
+                    <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                    <span>変更を保存する</span>
+                </button>
             </div>
 
             <div class="flex items-center justify-between md:justify-end gap-3 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                 <div class="flex items-center space-x-1.5">
                     <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
-                    <span>カレンダーをドラッグして空き時間を選択できます</span>
+                    <span>選んだら「保存する」を押して全員と同期します</span>
                 </div>
                 <button onclick="clearMySelection()" class="text-rose-600 hover:text-rose-700 font-medium underline shrink-0 ml-2">クリア</button>
             </div>
@@ -73,34 +81,13 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex-1 flex flex-col">
             <div class="grid grid-cols-8 border-b border-slate-200 bg-slate-50 text-center sticky top-16 z-20 shadow-xs">
                 <div class="py-3 px-1 text-xs font-bold text-slate-400 border-r border-slate-200 flex items-center justify-center">時間</div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="0">
-                    <div class="text-[11px] font-semibold text-slate-400">月</div>
-                    <div class="text-sm font-bold text-slate-700 date-label">6/1</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="1">
-                    <div class="text-[11px] font-semibold text-slate-400">火</div>
-                    <div class="text-sm font-bold text-slate-700 date-label">6/2</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="2">
-                    <div class="text-[11px] font-semibold text-slate-400">水</div>
-                    <div class="text-sm font-bold text-slate-700 date-label">6/3</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="3">
-                    <div class="text-[11px] font-semibold text-slate-400">木</div>
-                    <div class="text-sm font-bold text-slate-700 date-label">6/4</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="4">
-                    <div class="text-[11px] font-semibold text-slate-400">金</div>
-                    <div class="text-sm font-bold text-slate-700 date-label">6/5</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="5">
-                    <div class="text-[11px] font-semibold text-sky-500">土</div>
-                    <div class="text-sm font-bold text-sky-600 date-label">6/6</div>
-                </div>
-                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0 day-header" data-day="6">
-                    <div class="text-[11px] font-semibold text-rose-500">日</div>
-                    <div class="text-sm font-bold text-rose-600 date-label">6/7</div>
-                </div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-slate-400">月</div><div class="text-sm font-bold text-slate-700">6/1</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-slate-400">火</div><div class="text-sm font-bold text-slate-700">6/2</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-slate-400">水</div><div class="text-sm font-bold text-slate-700">6/3</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-slate-400">木</div><div class="text-sm font-bold text-slate-700">6/4</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-slate-400">金</div><div class="text-sm font-bold text-slate-700">6/5</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-sky-500">土</div><div class="text-sm font-bold text-sky-600">6/6</div></div>
+                <div class="py-3 px-1 border-r border-slate-200 last:border-r-0"><div class="text-[11px] font-semibold text-rose-500">日</div><div class="text-sm font-bold text-rose-600">6/7</div></div>
             </div>
 
             <div id="calendar-grid-container" class="overflow-y-auto max-h-[650px] relative select-none flex-1">
@@ -117,13 +104,10 @@
                     <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i>
                     <span>参加者一覧 (<span id="modal-participant-count">0</span>)</span>
                 </h3>
-                <button onclick="closeModal('participants-modal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <button onclick="closeModal('participants-modal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="py-4 space-y-3 overflow-y-auto flex-1" id="participants-list-container"></div>
-            <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
-                <span class="text-xs text-slate-400">※名前を変更すると自動で全員に共有されます</span>
+            <div class="pt-4 border-t border-slate-100 flex justify-end">
                 <button onclick="closeModal('participants-modal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">閉じる</button>
             </div>
         </div>
@@ -136,9 +120,7 @@
                     <i data-lucide="trophy" class="w-5 h-5 text-indigo-600"></i>
                     <span>おすすめ日時ランキング</span>
                 </h3>
-                <button onclick="closeModal('ranking-modal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <button onclick="closeModal('ranking-modal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <p class="text-xs text-slate-500 pt-3">参加者全員の空き状況が重なっている時間帯の上位候補です。</p>
             <div class="py-3 space-y-2 overflow-y-auto flex-1" id="ranking-list-container"></div>
@@ -150,7 +132,7 @@
 
     <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
         <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
-        <span id="toast-message">リンクをコピーしました</span>
+        <span id="toast-message">保存しました</span>
     </div>
 
     <script>
@@ -160,50 +142,40 @@
         const DATES = ['6/1', '6/2', '6/3', '6/4', '6/5', '6/6', '6/7'];
 
         let eventTitle = 'チーム定例会議の調整';
-        let myId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let roomId = '';
+        let myId = localStorage.getItem('sh_my_id') || ('user_' + Math.random().toString(36).substr(2, 9));
+        localStorage.setItem('sh_my_id', myId);
+
         let myName = 'あなた';
         let myColor = '#4f46e5';
         let participants = {};
         let isMouseDown = false;
         let isSelecting = true;
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
-            
-            if (params.has('title')) {
-                eventTitle = decodeURIComponent(params.get('title'));
-                document.getElementById('event-title-input').value = eventTitle;
-                document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
+            roomId = params.get('room');
+
+            if (!roomId) {
+                // 部屋IDがなければ自動で新しい部屋を作る
+                roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+                window.history.replaceState({}, '', `?room=${roomId}`);
             }
 
-            if (params.has('data')) {
-                try {
-                    const decodedData = JSON.parse(decodeURIComponent(escape(atob(params.get('data')))));
-                    participants = {};
-                    for (let pid in decodedData) {
-                        participants[pid] = {
-                            name: decodedData[pid].name,
-                            color: decodedData[pid].color,
-                            slots: new Set(decodedData[pid].slots)
-                        };
-                    }
-                } catch (e) {
-                    console.error('データ復元エラー', e);
-                }
-            }
+            await loadFromCloud();
 
+            // 自分のデータ初期設定
             if (!participants[myId]) {
                 const colors = ['#4f46e5', '#0284c7', '#16a34a', '#d97706', '#dc2626', '#9333ea'];
                 myColor = colors[Object.keys(participants).length % colors.length];
-                document.getElementById('my-color-input').value = myColor;
-                
-                participants[myId] = { name: myName, color: myColor, slots: new Set() };
+                participants[myId] = { name: myName, color: myColor, slots: [] };
             } else {
                 myName = participants[myId].name;
                 myColor = participants[myId].color;
-                document.getElementById('my-name-input').value = myName;
-                document.getElementById('my-color-input').value = myColor;
             }
+
+            document.getElementById('my-name-input').value = myName;
+            document.getElementById('my-color-input').value = myColor;
 
             renderCalendarGrid();
             updateAllUI();
@@ -211,15 +183,93 @@
             window.addEventListener('mouseup', () => {
                 if (isMouseDown) {
                     isMouseDown = false;
-                    saveMySlots();
+                    updateGridVisuals();
                 }
             });
             lucide.createIcons();
         });
 
+        // npoint.ioを使った無料クラウドストレージ連携
+        async function loadFromCloud() {
+            try {
+                const res = await fetch(`https://api.npoint.io/${roomId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.title) {
+                        eventTitle = data.title;
+                        document.getElementById('event-title-input').value = eventTitle;
+                        document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
+                    }
+                    if (data.participants) {
+                        participants = {};
+                        for (let pid in data.participants) {
+                            participants[pid] = {
+                                name: data.participants[pid].name,
+                                color: data.participants[pid].color,
+                                slots: data.participants[pid].slots || []
+                            };
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('新規ルームまたは読み込み中');
+            }
+        }
+
+        async function saveToCloud() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.textContent = '保存中...';
+
+            // Setを配列に変換して保存
+            const exportParticipants = {};
+            for (let pid in participants) {
+                exportParticipants[pid] = {
+                    name: participants[pid].name,
+                    color: participants[pid].color,
+                    slots: Array.isArray(participants[pid].slots) ? participants[pid].slots : Array.from(participants[pid].slots)
+                };
+            }
+
+            const payload = {
+                title: eventTitle,
+                participants: exportParticipants
+            };
+
+            try {
+                // 初回は新規作成(POST)、2回目以降は上書き(PUT)できるようにnpoint.ioへリクエスト
+                let res = await fetch(`https://api.npoint.io/${roomId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    await fetch(`https://api.npoint.io/${roomId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                showToast('変更をクラウドに保存しました！');
+            } catch (e) {
+                console.error(e);
+                showToast('保存に失敗しました');
+            } finally {
+                saveBtn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i><span>変更を保存する</span>';
+                lucide.createIcons();
+            }
+        }
+
+        function createNewRoom() {
+            const newRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+            window.location.href = window.location.pathname + `?room=${newRoomId}`;
+        }
+
         function updateEventTitle(newTitle) {
             eventTitle = newTitle.trim() || '会議・日程調整';
             document.getElementById('page-title-tag').textContent = eventTitle + ' - 週間バーチカル空き時間調整';
+            saveToCloud();
         }
 
         function renderCalendarGrid() {
@@ -242,8 +292,11 @@
                         cell.addEventListener('mousedown', (e) => {
                             e.preventDefault();
                             isMouseDown = true;
+                            if (!Array.isArray(participants[myId].slots)) {
+                                participants[myId].slots = [];
+                            }
                             const mine = participants[myId].slots;
-                            isSelecting = !mine.has(slotKey);
+                            isSelecting = !mine.includes(slotKey);
                             toggleSlotSelection(slotKey);
                         });
 
@@ -259,15 +312,15 @@
         }
 
         function toggleSlotSelection(slotKey) {
-            const mine = participants[myId].slots;
-            if (isSelecting) mine.add(slotKey);
-            else mine.delete(slotKey);
+            let mine = participants[myId].slots;
+            if (!Array.isArray(mine)) mine = [];
+            
+            if (isSelecting) {
+                if (!mine.includes(slotKey)) mine.push(slotKey);
+            } else {
+                participants[myId].slots = mine.filter(s => s !== slotKey);
+            }
             updateGridVisuals();
-        }
-
-        function saveMySlots() {
-            updateGridVisuals();
-            updateParticipantUI();
         }
 
         function updateGridVisuals() {
@@ -278,11 +331,13 @@
                 const slotKey = cell.dataset.slot;
                 let availableUsers = [];
                 for (let pid in participants) {
-                    if (participants[pid].slots.has(slotKey)) availableUsers.push(participants[pid]);
+                    const slots = participants[pid].slots || [];
+                    if (slots.includes(slotKey)) availableUsers.push(participants[pid]);
                 }
 
                 cell.className = cell.className.replace(/bg-\S+/g, '').trim();
-                const isMine = participants[myId].slots.has(slotKey);
+                const mine = participants[myId].slots || [];
+                const isMine = mine.includes(slotKey);
 
                 if (availableUsers.length > 0) {
                     if (totalParticipants === 1) {
@@ -303,18 +358,24 @@
 
         function updateMyName(newName) {
             myName = newName.trim() || '名無しさん';
-            participants[myId].name = myName;
+            if (participants[myId]) {
+                participants[myId].name = myName;
+            }
             updateParticipantUI();
         }
 
         function updateMyColor(newColor) {
             myColor = newColor;
-            participants[myId].color = myColor;
+            if (participants[myId]) {
+                participants[myId].color = myColor;
+            }
             updateParticipantUI();
         }
 
         function clearMySelection() {
-            participants[myId].slots.clear();
+            if (participants[myId]) {
+                participants[myId].slots = [];
+            }
             updateGridVisuals();
             updateParticipantUI();
             showToast('選択をクリアしました');
@@ -333,19 +394,18 @@
             for (let pid in participants) {
                 const p = participants[pid];
                 const isMe = pid === myId;
+                const slotsCount = (p.slots || []).length;
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100';
                 item.innerHTML = `
                     <div class="flex items-center space-x-3">
-                        <span class="w-4 h-4 rounded-full shadow-xs" style="background-color: ${p.color};"></span>
+                        <span class="w-4 h-4 rounded-full shadow-xs" style="background-color: ${p.color || '#4f46e5'};"></span>
                         <div>
                             <span class="text-sm font-bold text-slate-800">${p.name}</span>
                             ${isMe ? '<span class="ml-2 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">あなた</span>' : ''}
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs text-slate-500 font-medium">${p.slots.size}コマ選択</span>
-                    </div>
+                    <div class="text-xs text-slate-500 font-medium">${slotsCount}コマ選択</div>
                 `;
                 container.appendChild(item);
             }
@@ -361,7 +421,8 @@
             const totalParticipants = Object.keys(participants).length;
 
             for (let pid in participants) {
-                participants[pid].slots.forEach(slotKey => {
+                const slots = participants[pid].slots || [];
+                slots.forEach(slotKey => {
                     slotCounts[slotKey] = (slotCounts[slotKey] || 0) + 1;
                 });
             }
@@ -381,7 +442,8 @@
                 const endTimeStr = minuteHalf === 0 ? `${hour}:30` : `${hour + 1}:00`;
                 let availableNames = [];
                 for (let pid in participants) {
-                    if (participants[pid].slots.has(item.slotKey)) availableNames.push(participants[pid].name);
+                    const slots = participants[pid].slots || [];
+                    if (slots.includes(item.slotKey)) availableNames.push(participants[pid].name);
                 }
 
                 const rankCard = document.createElement('div');
@@ -407,22 +469,8 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         function shareEvent() {
-            const exportData = {};
-            for (let pid in participants) {
-                exportData[pid] = {
-                    name: participants[pid].name,
-                    color: participants[pid].color,
-                    slots: Array.from(participants[pid].slots)
-                };
-            }
-            const jsonStr = JSON.stringify(exportData);
-            const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
-
-            const baseUrl = window.location.href.split('?')[0];
-            const shareUrl = `${baseUrl}?title=${encodeURIComponent(eventTitle)}&data=${base64Data}`;
-
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast('全員のデータ入り共有URLをコピーしました！');
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('このページのURLをコピーしました！同じURLで全員同期します');
             });
         }
 
