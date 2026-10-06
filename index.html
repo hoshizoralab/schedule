@@ -6,6 +6,34 @@
     <title id="page-title-tag">週間バーチカル空き時間調整</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDKの読み込み -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDK4lCL20INMxhrUQUM2aJ4hP6UtDVezw",
+            authDomain: "schedule-app-bed78.firebaseapp.com",
+            projectId: "schedule-app-bed78",
+            storageBucket: "schedule-app-bed78.appspot.com",
+            messagingSenderId: "808137025157",
+            appId: "1:808137025157:web:b32a466bd6aa504e42ebec",
+            measurementId: "G-53G5BEDTJY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // グローバル関数として公開
+        window.fbDB = db;
+        window.fbDoc = doc;
+        window.fbGetDoc = getDoc;
+        window.fbSetDoc = setDoc;
+        window.fbOnSnapshot = onSnapshot;
+
+        // Firebase準備完了イベントを発火
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans JP', 'Inter', sans-serif; }
@@ -24,7 +52,7 @@
                 </div>
                 <div>
                     <input type="text" id="event-title-input" value="チーム定例会議の調整" onchange="updateEventTitle(this.value)" class="text-lg font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-1 transition w-48 sm:w-64" title="クリックして会議名を変更">
-                    <p class="text-xs text-slate-500 px-1">同じリンクを開くだけで全員の予定が同期します</p>
+                    <p class="text-xs text-slate-500 px-1">同じリンクを開くだけで全員の予定がリアルタイム同期します</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 sm:space-x-3">
@@ -71,7 +99,7 @@
             <div class="flex items-center justify-between md:justify-end gap-3 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                 <div class="flex items-center space-x-1.5">
                     <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
-                    <span>予定を選んだら「クラウドに保存する」を押してください</span>
+                    <span>選んだら「クラウドに保存する」を押してください</span>
                 </div>
                 <button onclick="clearMySelection()" class="text-rose-600 hover:text-rose-700 font-medium underline shrink-0 ml-2">クリア</button>
             </div>
@@ -152,7 +180,7 @@
         let isMouseDown = false;
         let isSelecting = true;
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('firebase-ready', async () => {
             const params = new URLSearchParams(window.location.search);
             roomId = params.get('room');
 
@@ -189,13 +217,10 @@
 
         async function loadFromCloud() {
             try {
-                // CORSエラーを完全に回避するための安全なパブリックAPIエンドポイントを使用
-                const res = await fetch(`https://api.npoint.io/${roomId}`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                if (res.ok) {
-                    const data = await res.json();
+                const docRef = window.fbDoc(window.fbDB, "rooms", roomId);
+                const docSnap = await window.fbGetDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
                     if (data.title) {
                         eventTitle = data.title;
                         document.getElementById('event-title-input').value = eventTitle;
@@ -213,7 +238,7 @@
                     }
                 }
             } catch (e) {
-                console.log('新規ルームとして初期化します');
+                console.log('新規ルームまたは読み込み中');
             }
         }
 
@@ -232,33 +257,17 @@
 
             const payload = {
                 title: eventTitle,
-                participants: exportParticipants
+                participants: exportParticipants,
+                updatedAt: new Date().toISOString()
             };
 
             try {
-                // 安全なPOSTリクエストでデータをクラウドに送信
-                let res = await fetch(`https://api.npoint.io/${roomId}`, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!res.ok) {
-                    await fetch(`https://api.npoint.io/${roomId}`, {
-                        method: 'PUT',
-                        mode: 'cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                }
-
-                showToast('クラウドに保存し、全員と同期しました！');
+                const docRef = window.fbDoc(window.fbDB, "rooms", roomId);
+                await window.fbSetDoc(docRef, payload);
+                showToast('Firebaseクラウドに保存し、全員と同期しました！');
             } catch (e) {
                 console.error(e);
-                // 万が一の通信エラー時もローカルとハイブリッドで即時保存
-                localStorage.setItem('sh_room_' + roomId, JSON.stringify(payload));
-                showToast('ローカルに保存しました（同期完了）');
+                showToast('保存に失敗しました');
             } finally {
                 saveBtn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i><span>クラウドに保存する</span>';
                 lucide.createIcons();
@@ -473,7 +482,7 @@
 
         function shareEvent() {
             navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast('共有リンクをコピーしました！');
+                showToast('共有リンクをコピーしました！このURLで全員同期します');
             });
         }
 
